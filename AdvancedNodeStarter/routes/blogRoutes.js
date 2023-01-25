@@ -1,8 +1,5 @@
 const mongoose = require('mongoose');
 const requireLogin = require('../middlewares/requireLogin');
-const redis = require('redis');
-const redisUrl = 'redis://127.0.0.1:6379';
-const client = redis.createClient(redisUrl);
 const Blog = mongoose.model('Blog');
 
 module.exports = (app) => {
@@ -16,33 +13,12 @@ module.exports = (app) => {
   });
 
   app.get('/api/blogs', requireLogin, async (req, res) => {
-    try {
-      await client.connect();
-      // Do we have any cached data in redis related
-      // to this query
-      const cachedBlogs = await client.get(req.user.id);
+    // 유저 인증 완료 후 /api/blogs 요청하면,
+    // passport의 deserializeUser() 함수에서 session 정보를 통해 가져온 유저 정보를 req.user에 저장한다.
+    // 이때, 유저 정보는 Redis Cache에 저장된다.
+    const blogs = await Blog.find({ _user: req.user.id });
 
-      // if yes, then respond to the request right away
-      // and return
-      if (cachedBlogs) {
-        console.log('SERVING FROM CACHE');
-        return res.send(JSON.parse(cachedBlogs));
-      }
-
-      // if no, we need to respond to request
-      // and update our cache to store the data
-      const blogs = await Blog.find({ _user: req.user.id });
-
-      res.send(blogs);
-
-      console.log('SERVING FROM MONGODB');
-      await client.set(req.user.id, JSON.stringify(blogs));
-    } catch (err) {
-      console.log(err);
-      return res.status(500).send(err);
-    } finally {
-      client.disconnect();
-    }
+    res.send(blogs);
   });
 
   app.post('/api/blogs', requireLogin, async (req, res) => {

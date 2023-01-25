@@ -6,9 +6,20 @@ const bodyParser = require('body-parser');
 const keys = require('./config/keys');
 const logger = require('morgan');
 
+const overwriteExecFunc = require('./services/cache');
+const redis = require('redis');
+const redisUrl = 'redis://127.0.0.1:6379';
+const client = redis.createClient(redisUrl);
+
+// redis cache server 연결
+client.on('error', (err) => console.log(err));
+client.connect();
+
 require('./models/User');
 require('./models/Blog');
 require('./services/passport');
+// mongoose 라이브러리 exec() 함수 덮어쓰기
+overwriteExecFunc(client);
 
 mongoose
   .set('strictQuery', true)

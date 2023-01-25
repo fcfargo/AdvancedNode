@@ -1,0 +1,46 @@
+const mongoose = require('mongoose');
+
+function overwriteExecFunc(client) {
+  // mongoose 라이브러리 exec() 함수 참조 및 변수 할당
+  // 함수 경로: node_modules/mongoose/lib/query.js
+  const exec = mongoose.Query.prototype.exec;
+
+  // 기존(original) exec() 함수 덮어쓰기(overwriting)
+  // c.f) 프로토타입 메서드 정의할 경우 화살표 함수 대신 function 키워드 사용
+  // apply(): exec() 함수 실행에 필요한 모든 인자를 전달해준다.
+  // 함수 경로: node_modules/mongoose/lib/query.js
+  mongoose.Query.prototype.exec = async function () {
+    // Query.prototype.getFilter(): 쿼리문 조건을 반환
+    // Query.mongooseCollection.name: 쿼리문 model 이름 반환
+    // Object.assign(): 여러 개의 Object 객체를 하나의 Object 객체로 나타냄
+    const key = JSON.stringify(Object.assign(this.getFilter(), { collection: this.mongooseCollection.name }));
+
+    // See if we have a value for 'key' in redis
+    const cacheValue = await client.get(key);
+
+    // If we do, return that
+    if (cacheValue) {
+      const doc = JSON.parse(cacheValue);
+
+      // Redis Cache data 형태를 mongoose model instance 형태로 반환해야한다.
+      // 이를 위해 데이터를 new this.model(doc) 형태로 변환했다. 변환된 데이터는 아래 형태와 동일하다.
+      // new Blog ({
+      //  title: turkymp3,
+      //  content: named player in JP ...,
+      //  createdAt: 2023-01-18T12:28:18.702+00:00
+      //  _user: 63c7e2bbc4a3d32ffb3bfff5,
+      // })
+      return Array.isArray(doc) ? doc.map((d) => new this.model(d)) : new this.model(doc);
+    }
+
+    // Otherwise, issue the query and store the result in redis
+    const result = await exec.apply(this, arguments);
+
+    // 데이터 return 처리 속도 향상 위해 비동기 함수로 사용
+    client.set(key, JSON.stringify(result));
+
+    return result;
+  };
+}
+
+module.exports = overwriteExecFunc;
