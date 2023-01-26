@@ -16,7 +16,7 @@ module.exports = (app) => {
     // 유저 인증 완료 후 /api/blogs 요청하면,
     // passport의 deserializeUser() 함수에서 session 정보를 통해 가져온 유저 정보를 req.user에 저장한다.
     // 이때, 유저 정보는 Redis Cache에 저장된다.
-    const blogs = await Blog.find({ _user: req.user.id });
+    const blogs = await Blog.find({ _user: req.user.id }).cache();
 
     res.send(blogs);
   });

@@ -5,11 +5,22 @@ function overwriteExecFunc(client) {
   // 함수 경로: node_modules/mongoose/lib/query.js
   const exec = mongoose.Query.prototype.exec;
 
+  // 쿼리 객체 실행(exec()) 시
+  // Redis Cache 읽기 및 쓰기 코드를 적용할 지 여부를 선택하는 메서드를 추가
+  mongoose.Query.prototype.cache = function () {
+    this.useCache = true;
+    return this;
+  };
+
   // 기존(original) exec() 함수 덮어쓰기(overwriting)
   // c.f) 프로토타입 메서드 정의할 경우 화살표 함수 대신 function 키워드 사용
   // apply(): exec() 함수 실행에 필요한 모든 인자를 전달해준다.
   // 함수 경로: node_modules/mongoose/lib/query.js
   mongoose.Query.prototype.exec = async function () {
+    if (!this.useCache) {
+      return exec.apply(this, arguments);
+    }
+
     // Query.prototype.getFilter(): 쿼리문 조건을 반환
     // Query.mongooseCollection.name: 쿼리문 model 이름 반환
     // Object.assign(): 여러 개의 Object 객체를 하나의 Object 객체로 나타냄
