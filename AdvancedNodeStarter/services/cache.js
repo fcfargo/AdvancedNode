@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
+const redis = require('redis');
+const redisUrl = 'redis://127.0.0.1:6379';
+const client = redis.createClient(redisUrl);
 
-function overwriteExecFunc(client) {
+// redis cache server 연결
+client.on('error', (err) => console.log(err));
+client.connect();
+
+function overwriteExecFunc() {
   // mongoose 라이브러리 exec() 함수 참조 및 변수 할당
   // 함수 경로: node_modules/mongoose/lib/query.js
   const exec = mongoose.Query.prototype.exec;
@@ -55,9 +62,11 @@ function overwriteExecFunc(client) {
   };
 }
 
+function clearHash(hashKey) {
+  client.del(JSON.stringify(hashKey));
+}
+
 module.exports = {
   overwriteExecFunc,
-  clearHash(client, hashKey) {
-    client.del(JSON.stringify(hashKey));
-  },
+  clearHash,
 };

@@ -7,19 +7,12 @@ const keys = require('./config/keys');
 const logger = require('morgan');
 
 const { overwriteExecFunc } = require('./services/cache');
-const redis = require('redis');
-const redisUrl = 'redis://127.0.0.1:6379';
-const client = redis.createClient(redisUrl);
-
-// redis cache server 연결
-client.on('error', (err) => console.log(err));
-client.connect();
 
 require('./models/User');
 require('./models/Blog');
 require('./services/passport');
 // mongoose 라이브러리 exec() 함수 덮어쓰기
-overwriteExecFunc(client);
+overwriteExecFunc();
 
 mongoose
   .set('strictQuery', true)
@@ -42,7 +35,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 require('./routes/authRoutes')(app);
-require('./routes/blogRoutes')(app, client);
+require('./routes/blogRoutes')(app);
 
 if (['production'].includes(process.env.NODE_ENV)) {
   app.use(express.static('client/build'));
