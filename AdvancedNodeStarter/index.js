@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const keys = require('./config/keys');
 const logger = require('morgan');
 
-const overwriteExecFunc = require('./services/cache');
+const { overwriteExecFunc } = require('./services/cache');
 const redis = require('redis');
 const redisUrl = 'redis://127.0.0.1:6379';
 const client = redis.createClient(redisUrl);
@@ -42,7 +42,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 require('./routes/authRoutes')(app);
-require('./routes/blogRoutes')(app);
+require('./routes/blogRoutes')(app, client);
 
 if (['production'].includes(process.env.NODE_ENV)) {
   app.use(express.static('client/build'));

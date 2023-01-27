@@ -7,8 +7,9 @@ function overwriteExecFunc(client) {
 
   // 쿼리 객체 실행(exec()) 시
   // Redis Cache 읽기 및 쓰기 코드를 적용할 지 여부를 선택하는 메서드를 추가
-  mongoose.Query.prototype.cache = function () {
+  mongoose.Query.prototype.cache = function (options = {}) {
     this.useCache = true;
+    this.hashKey = JSON.stringify(options.key || '');
     return this;
   };
 
@@ -26,8 +27,8 @@ function overwriteExecFunc(client) {
     // Object.assign(): 여러 개의 Object 객체를 하나의 Object 객체로 나타냄
     const key = JSON.stringify(Object.assign(this.getFilter(), { collection: this.mongooseCollection.name }));
 
-    // See if we have a value for 'key' in redis
-    const cacheValue = await client.get(key);
+    // See if we have a value for 'HashKey' in redis
+    const cacheValue = await client.hGet(this.hashKey, key);
 
     // If we do, return that
     if (cacheValue) {
@@ -48,10 +49,15 @@ function overwriteExecFunc(client) {
     const result = await exec.apply(this, arguments);
 
     // 데이터 return 처리 속도 향상 위해 비동기 함수로 사용
-    client.set(key, JSON.stringify(result));
+    client.hSet(this.hashKey, key, JSON.stringify(result));
 
     return result;
   };
 }
 
-module.exports = overwriteExecFunc;
+module.exports = {
+  overwriteExecFunc,
+  clearHash(client, hashKey) {
+    client.del(JSON.stringify(hashKey));
+  },
+};
