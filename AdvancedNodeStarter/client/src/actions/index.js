@@ -25,7 +25,7 @@ export const submitBlog = (values, file, history) => async (dispatch) => {
   });
 
   // api 통신을 통해 블로그 포스트 데이터 생성
-  const res = await axios.post('/api/blogs', values);
+  const res = await axios.post('/api/blogs', { ...values, imageUrl: uploadConfig.data.key });
 
   // 유저를 특정 /blogs 페이지로 리다이렉트
   history.push('/blogs');
