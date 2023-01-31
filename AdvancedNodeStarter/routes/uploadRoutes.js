@@ -14,9 +14,9 @@ const s3Client = new S3({
 module.exports = (app) => {
   app.get('/api/upload', requireLogin, async (req, res) => {
     const params = {
-      Bucket: 'blog-dev-fcfargo.jpeg',
+      Bucket: 'blog-dev-fcfargo',
       Key: `${req.user.id}/${uuidv1()}`,
-      ContentType: 'jpeg',
+      ContentType: 'image/jpeg',
     };
     s3Client.getSignedUrl('putObject', params, (err, url) => res.send({ key: params.Key, url }));
   });

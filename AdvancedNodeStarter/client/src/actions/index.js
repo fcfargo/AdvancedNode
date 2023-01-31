@@ -13,7 +13,17 @@ export const handleToken = (token) => async (dispatch) => {
   dispatch({ type: FETCH_USER, payload: res.data });
 };
 
-export const submitBlog = (values, history) => async (dispatch) => {
+export const submitBlog = (values, file, history) => async (dispatch) => {
+  // api 통신을 통해 업로드 이미지 Presigned Url 가져오기
+  const uploadConfig = await axios.get('/api/upload');
+
+  // Presigned Url 활용하여 브라우저에서 이미지 업로드
+  const upload = await axios.put(uploadConfig.data.url, file, {
+    headers: {
+      'Content-Type': file.type,
+    },
+  });
+
   // api 통신을 통해 블로그 포스트 데이터 생성
   const res = await axios.post('/api/blogs', values);
 
