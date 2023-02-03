@@ -1,20 +1,25 @@
 const puppeteer = require('puppeteer');
 
-// test() = it()
-test('We can launch a browser', async () => {
+let browser, page;
+beforeEach(async () => {
   // Uses non-headless mode
-  const browser = await puppeteer.launch({ headless: false });
+  browser = await puppeteer.launch({ headless: false });
 
   // Represents Individual Chrominum Browser Tab
-  const page = await browser.newPage();
+  page = await browser.newPage();
 
   // Navigae to app
   // 'http://' 생략 시 Error: net::err_aborted
   await page.goto('http://localhost:3000');
+});
 
+afterAll(async () => {
+  await browser.close();
+});
+
+// test() = it()
+test('We can launch a browser', async () => {
   // page.$eval(): run 'document.querySelector'
   const text = await page.$eval('a.brand-logo', (el) => el.textContent);
   expect(text).toEqual('Blogster');
-
-  await browser.close();
 });
