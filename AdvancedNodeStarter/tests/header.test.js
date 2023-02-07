@@ -1,7 +1,6 @@
 const puppeteer = require('puppeteer');
-const Buffer = require('buffer/').Buffer;
-const Keygrip = require('keygrip');
-const { cookieKey } = require('../config/dev');
+const sessionFactory = require('./factories/sessionFactory');
+const userFactory = require('./factories/userFactory');
 
 let browser, page;
 beforeEach(async () => {
@@ -34,23 +33,13 @@ test('브라우저 Login 버튼 클릭에 성공할 경우 google account 페이
 });
 
 test.only('클라이언트 세션 쿠키 데이터 설정하여 요청할 경우 브라우저 헤더에 Logout 텍스트가 나타난다.', async () => {
-  // create Session Object
-  const sessionObject = {
-    passport: {
-      user: '63c7e2bbc4a3d32ffb3bfff5',
-    },
-  };
+  // create tetsUser
+  const testUser = await userFactory();
 
-  // create Session String
-  const sessionString = Buffer.from(JSON.stringify(sessionObject), 'utf-8').toString('base64');
+  // get session cookie && encrypted session cookie
+  const { sessionString, sessionSignature } = await sessionFactory(testUser._id.toString());
 
-  // cookieKey 활용하여 Keygrip 객체 생성
-  const keygrip = new Keygrip([cookieKey]);
-
-  // create Session Signature(sessionString 쿠키 데이터 서명)
-  const sessionSignature = keygrip.sign('session=' + sessionString);
-
-  // setting Cookie
+  // set Cookie
   await page.setCookie({ name: 'session', value: sessionString }, { name: 'session.sig', value: sessionSignature });
 
   // refresh page
